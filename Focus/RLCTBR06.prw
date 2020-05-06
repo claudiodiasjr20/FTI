@@ -1,0 +1,610 @@
+#INCLUDE "PROTHEUS.CH"
+#INCLUDE "RWMAKE.CH"
+#INCLUDE "TOPCONN.CH"
+#INCLUDE "TBICONN.CH"
+#INCLUDE "TBICODE.CH"                           
+
+/*ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Programa  ³ RLCTBR06  | Autor ³ Claudio Dias JR     (Focus Consultoria) | Data ³ 25/06/18 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descricao ³ Relatório CHAMADO 41139                                                       ³±±
+±±³          ³ Desenvolvimento - Relatorio de Compras (Resultado 2 CTB) - ID ant 40954       ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ Parametros -> Nil                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³ Parametros -> Nil                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Específico³ FTI-Consulting                                                          		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Analista Resp.³  Data  ³ Manutencao Efetuada                                       		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³              ³  /  /  ³                                               					 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+
+#DEFINE DFORNECE 	 01
+#DEFINE DLOJA 		 02
+#DEFINE DNOME        03
+#DEFINE DCONTA 	     04
+#DEFINE DDESCCONTA   05
+#DEFINE DCCUSTO      06
+#DEFINE DDESCCUSTO   07
+
+#DEFINE DCOLUNAS     07
+
+User Function RLCTBR06()
+
+Local   o_Dlg                 
+Local   c_Perg	 	:= "RLCTBR06" 
+Local   c_Titulo 	:= ""
+Local   l_Ret 	 	:= .T.
+Private c_Chr 		:= Chr(13)+Chr(10)
+Private c_Versao 	:= "Vr.28/09/2018"
+
+c_Titulo := "| FTI - Resultado 2 CTB | " + c_Versao + " | "
+
+DEFINE MSDIALOG o_Dlg TITLE c_Titulo;
+FROM 000,000 TO 300,390 PIXEL
+
+@015,010 SAY   "Este programa tem como objetivo gerar relatório em .XLS ou .CSV	     "  OF o_Dlg PIXEL
+@025,010 SAY   "A base das informações são os itens da nota fiscal de entrada(SD1),  "  OF o_Dlg PIXEL
+@035,010 SAY   "Conta Contábil(CT1) e Centro de Custo (CTT)        	                 "  OF o_Dlg PIXEL
+
+@055,010 SAY   "IMPORTANTE                                                           "  OF o_Dlg PIXEL COLOR CLR_RED
+@065,010 SAY   "Caso haja a necessidade de extrair um período muito longo, verifique "  OF o_Dlg PIXEL
+@075,010 SAY   "a opção do parâmetro 'Tipo relatório' e deixe o mesmo como 'CSV'     "  OF o_Dlg PIXEL
+@095,010 SAY   "ID 40954/41139                                                       "  OF o_Dlg PIXEL COLOR CLR_RED
+
+@115,025 BUTTON oBut1 PROMPT "&Sair"  		SIZE 44,12 OF o_Dlg PIXEl Action (n_Opcao := 0,o_Dlg:End())
+@115,075 BUTTON oBut1 PROMPT "&Parametros"  SIZE 44,12 OF o_Dlg PIXEl Action (n_Opcao := 1,o_Dlg:End())
+@115,125 BUTTON oBut1 PROMPT "&Exportar"  	SIZE 44,12 OF o_Dlg PIXEl Action (n_Opcao := 2,o_Dlg:End())
+ACTIVATE MSDIALOG o_Dlg CENTERED
+
+If n_Opcao == 1
+	ValidPerg(c_Perg)
+	Pergunte(c_Perg,.T.)
+	U_RLCTBR06()
+ElseIf n_Opcao == 2
+	Pergunte(c_Perg,.F.)
+	Processa({|lend| fProcess()},"Efetuando a seleção dos dados... Por favor, aguarde.")
+Else
+	MsgStop("Exportação cancelada!","CANCELADO - RLCTBR06.PRW")
+EndIf
+
+Return Nil
+
+//*************************************************************************************************************************//
+
+/*ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Programa  ³ fProcess  | Autor ³ Claudio Dias JR     (Focus Consultoria) | Data ³ 21/06/18 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descricao ³ Responsável buscar as informações que serão exibidas no relatorio             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ Parametros -> Nil                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³ Parametros -> Nil                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Específico³ FTI-Consulting                                                          		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Analista Resp.³  Data  ³ Manutencao Efetuada                                       		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³              ³  /  /  ³                                               					 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+
+Static Function fProcess()
+
+Local c_Query 	:= ""
+Private a_Meses	:= fGetMeses()
+Private a_Dados	:= {}
+
+c_Query := " SELECT   FORNECE" + c_Chr
+c_Query += "  		, LOJA" + c_Chr
+c_Query += "		, NOME" + c_Chr
+c_Query += "		, CONTA" + c_Chr
+c_Query += "		, DESCCT1" + c_Chr
+c_Query += "		, DESCCT1" + c_Chr
+c_Query += "		, CCUSTO" + c_Chr
+c_Query += "		, DESCCTT" + c_Chr
+
+For n_Mes := 1 To Len(a_Meses)
+	c_Query += "		, SUM(AM"+a_Meses[n_Mes]+") AS 'AM" +a_Meses[n_Mes] +"'"+ c_Chr
+Next n_Mes 
+
+c_Query += " FROM("  + c_Chr + c_Chr
+
+c_Query += " SELECT	  D1_FORNECE AS FORNECE " + c_Chr
+c_Query += "		, D1_LOJA AS LOJA " + c_Chr
+c_Query += "		, CASE WHEN( D1_TIPO IN ('D','B') ) THEN(A1_NOME) ELSE(A2_NOME)	END AS NOME " + c_Chr
+c_Query += "		, D1_CONTA AS CONTA " + c_Chr
+c_Query += "		, CT1_DESC01 AS DESCCT1 " + c_Chr
+c_Query += "		, D1_CC AS CCUSTO " + c_Chr
+c_Query += "		, CTT_DESC01 AS DESCCTT " + c_Chr
+
+For n_Mes := 1 To Len(a_Meses)
+	c_Query += "		, CASE WHEN ( LEFT(D1_DTDIGIT,6) = '"+a_Meses[n_Mes]+"') THEN(D1_TOTAL) ELSE (0) END AS 'AM" +a_Meses[n_Mes] +"'"+ c_Chr
+Next n_Mes 
+
+c_Query += "FROM SD1050 SD1 " + c_Chr + c_Chr
+
+c_Query += "	LEFT JOIN SA2050 SA2 " + c_Chr
+c_Query += "	ON  A2_FILIAL		= '' " + c_Chr
+c_Query += "	AND A2_COD			= D1_FORNECE " + c_Chr
+c_Query += "	AND A2_LOJA			= D1_LOJA " + c_Chr
+c_Query += "	AND SA2.D_E_L_E_T_	= '' " + c_Chr+ c_Chr
+
+c_Query += "	LEFT JOIN SA1050 SA1 " + c_Chr
+c_Query += "	ON  A1_FILIAL		= '' " + c_Chr
+c_Query += "	AND A1_COD			= D1_FORNECE " + c_Chr
+c_Query += "	AND A1_LOJA			= D1_LOJA " + c_Chr
+c_Query += "	AND SA1.D_E_L_E_T_	= '' " + c_Chr + c_Chr
+
+c_Query += "	INNER JOIN CT1050 CT1 " + c_Chr
+c_Query += "	ON  CT1_FILIAL		= '' " + c_Chr
+c_Query += "	AND CT1_CONTA		= D1_CONTA " + c_Chr
+c_Query += "	AND CT1.D_E_L_E_T_	= '' " + c_Chr + c_Chr
+
+c_Query += "	INNER JOIN CTT050 CTT " + c_Chr
+c_Query += "	ON  CTT_FILIAL		= '' " + c_Chr
+c_Query += "	AND CTT_CUSTO		= D1_CC " + c_Chr
+c_Query += "	AND CTT.D_E_L_E_T_	= '' " + c_Chr + c_Chr
+
+c_Query += " WHERE SD1.D_E_L_E_T_ = '' " + c_Chr
+c_Query += " AND   D1_DTDIGIT 	BETWEEN '" +DTOS(MV_PAR01)+ "' AND '" +DTOS(MV_PAR02)+ "'" + c_Chr
+c_Query += " AND   D1_FORNECE 	BETWEEN '" +MV_PAR03+ "' AND '" +MV_PAR05+ "'" + c_Chr
+c_Query += " AND   D1_LOJA 		BETWEEN '" +MV_PAR04+ "' AND '" +MV_PAR06+ "'" + c_Chr
+c_Query += " AND   D1_CONTA		BETWEEN '" +MV_PAR07+ "' AND '" +MV_PAR08+ "'" + c_Chr
+c_Query += " AND   D1_CC		BETWEEN '" +MV_PAR09+ "' AND '" +MV_PAR10+ "'" + c_Chr  
+
+c_Query += "  ) AS RESULT " + c_Chr  
+
+c_Query += " GROUP BY FORNECE, LOJA, NOME, CONTA, DESCCT1, DESCCT1, CCUSTO, DESCCTT " + c_Chr  
+c_Query += " ORDER BY FORNECE, LOJA " + c_Chr  
+
+If Select("RLCTBR06") > 0
+	RLCTBR06->(DbCloseArea())
+EndIf
+
+MemoWrite("RLCTBR06_Query",c_Query)
+TCQUERY c_Query NEW ALIAS "RLCTBR06"
+
+If RLCTBR06->(!Eof()) 
+
+	While RLCTBR06->(!Eof())
+	
+		c_AnoMes := ""
+		n_Soma 	 := 0
+		For n_Mes := 1 To Len(a_Meses)
+			c_AnoMes += IIF(n_Mes==1, "'", ",'") + 	AllTrim(Str(&("RLCTBR06->AM" + a_Meses[n_Mes]))) + "'"
+			n_Soma	 += &("RLCTBR06->AM" + a_Meses[n_Mes])
+		Next n_Mes
+		
+		c_ArrayDados := "aAdd(a_Dados,{  '" + RLCTBR06->FORNECE + "'," +;
+										"'" + RLCTBR06->LOJA 	+ "'," +;
+										"'" + RLCTBR06->NOME 	+ "'," +;
+										"'" + RLCTBR06->CONTA 	+ "'," +;
+										"'" + RLCTBR06->DESCCT1 + "'," +;
+										"'" + RLCTBR06->CCUSTO 	+ "'," +;
+										"'" + RLCTBR06->DESCCTT + "'," +;
+										c_AnoMes +;
+										",'" + AllTrim(Str(n_Soma)) + "'" + " } )"
+		&(c_ArrayDados)
+		RLCTBR06->(DbSkip())
+		
+	EndDo
+
+//- Verifico qual a Opção de relatório XLS ou CSV	
+	If MV_PAR11 == 1
+		ExpXLS(a_Dados)
+	Else
+		ExpCSV(a_Dados)
+	EndIf
+	
+Else
+	MsgStop("Não existe registros para extração, verifique os parâmetros","A V I S O ! ! !")
+EndIf
+
+RLCTBR06->(DbCloseArea())
+
+Return Nil
+
+//*************************************************************************************************************************//
+
+/*ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Programa  ³ ExpXLS    | Autor ³ Claudio Dias JR     (Focus Consultoria) | Data ³ 21/06/18 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descricao ³ Geração de relatório XLS                                                      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ a_Dados -> Array com dados para impressão                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³ Parametros -> Nil                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Específico³ FTI-Consulting                                                          		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Analista Resp.³  Data  ³ Manutencao Efetuada                                       		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³              ³  /  /  ³                                               					 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+
+Static Function ExpXLS(a_Dados)
+          
+Local c_Dia 	:= STRTRAN(DTOC(MSDATE()),"/","_")+"_"+Replace(Time(),":","_")
+Local c_Arq		:= ""
+Local c_ExtArq 	:= ".xls"
+Local c_Path 	:= "" 
+Private c_Nome 	:= "RLCTBR06_" + c_Dia
+Private oExcel	:= FWMSEXCEL():New() 
+
+c_Path := cGetFile("\", "Selecione o Local para salvar a Arquivo.",,,,GETF_RETDIRECTORY+GETF_LOCALHARD+GETF_LOCALFLOPPY)
+
+If !ExistDir( c_Path )
+	c_Path 	:= __RELDIR
+EndIf
+ 
+oExcel:SetTitleFrColor("#000000") 	// Cor do Texto da Primeira Linha
+oExcel:SetTitleBgColor("#FFFFFF") 	// Cor de Fundo da Primeira Linha
+oExcel:SetFrColorHeader("#FFFFFF")  // Texto do Titulo das Colunas
+oExcel:SetBgColorHeader("#003366")  // Background do Titulo das Colunas
+oExcel:SetLineBGColor("#FFFFFF")  	// Background das linhas de texto
+oExcel:Set2LineBGColor("#FFFFFF")	// Background das linhas de texto 	
+
+c_NomeSheet := "Parametros"
+oExcel:AddworkSheet( c_NomeSheet )  
+oExcel:AddTable ( c_NomeSheet , c_Nome)
+oExcel:AddColumn( c_NomeSheet , c_Nome, "Parametro"		,1,1)
+oExcel:AddColumn( c_NomeSheet , c_Nome, "Conteúdo"		,1,1)
+
+oExcel:AddRow( c_NomeSheet, c_Nome, { "Dt.NF Inclusao De"	, DTOC(MV_PAR01) })
+oExcel:AddRow( c_NomeSheet, c_Nome, { "Dt.NF Inclusao Ate"	, DTOC(MV_PAR02) })
+oExcel:AddRow( c_NomeSheet, c_Nome, { "Fornecedor De"		, MV_PAR03 })
+oExcel:AddRow( c_NomeSheet, c_Nome, { "Loja De"				, MV_PAR04 })
+oExcel:AddRow( c_NomeSheet, c_Nome, { "Fornecedor Ate"		, MV_PAR05 })
+oExcel:AddRow( c_NomeSheet, c_Nome, { "Loja Ate"			, MV_PAR06 })
+oExcel:AddRow( c_NomeSheet, c_Nome, { "Conta De"			, MV_PAR07 })
+oExcel:AddRow( c_NomeSheet, c_Nome, { "Conta Ate"			, MV_PAR08 })
+oExcel:AddRow( c_NomeSheet, c_Nome, { "C.Custo De"			, MV_PAR09 })
+oExcel:AddRow( c_NomeSheet, c_Nome, { "C.Custo Ate"			, MV_PAR10 })
+oExcel:AddRow( c_NomeSheet, c_Nome, { "Extensão relatório"	, IIF(MV_PAR11==1,"XLS","CSV") })
+	
+c_NomeSheet := "Resultado_CTB2"
+oExcel:AddworkSheet( c_NomeSheet )  
+oExcel:AddTable ( c_NomeSheet , c_Nome)
+oExcel:AddColumn( c_NomeSheet , c_Nome, "Código do Fornecedor",1,1)	 	// FORNECE
+oExcel:AddColumn( c_NomeSheet , c_Nome, "Loja do Fornecedor",1,1) 		// LOJA 
+oExcel:AddColumn( c_NomeSheet , c_Nome, "Nome do Fornecedor",1,1) 		// NOME
+oExcel:AddColumn( c_NomeSheet , c_Nome, "C Contabil NF",1,1)			// CTA_FORN
+oExcel:AddColumn( c_NomeSheet , c_Nome, "Nome C. Contabil",1,1) 		// PRODDESC
+oExcel:AddColumn( c_NomeSheet , c_Nome, "Centro Custo",1,1) 			// CCUSTO
+oExcel:AddColumn( c_NomeSheet , c_Nome, "Nome Centro Custo",1,1)		// SEGMENTO
+
+For n_AnoMes := 1 To Len(a_Meses)
+	oExcel:AddColumn( c_NomeSheet , c_Nome, UPPER(U_NomeMes( Val(SubStr(a_Meses[n_AnoMes],5,2)) )) + "-" + Left(a_Meses[n_AnoMes],4) ,3,3) 	// MES
+Next n_Mes
+
+oExcel:AddColumn( c_NomeSheet , c_Nome, "Total", 3,3)		// TOTAL
+
+ProcRegua(Len(a_Dados))
+
+For n_Item := 1 To Len(a_Dados)
+
+		IncProc() 
+		
+		c_AnoMes := ""
+		For n_Mes := 1 To Len(a_Meses)
+			c_AnoMes += IIF(n_Mes==1, "Val('", ",Val('") + 	a_Dados[n_Item][n_Mes+DCOLUNAS] + "')"
+		Next n_Mes
+										 		
+		c_ArrayXLS := "oExcel:AddRow( c_NomeSheet, c_Nome, { '" + a_Dados[n_Item][DFORNECE] 	+ "'," +;
+															"'" + a_Dados[n_Item][DLOJA]		+ "'," +;
+															"'" + a_Dados[n_Item][DNOME]		+ "'," +;
+															"'" + a_Dados[n_Item][DCONTA] 		+ "'," +;
+															"'" + a_Dados[n_Item][DDESCCONTA] 	+ "'," +;
+															"'" + a_Dados[n_Item][DCCUSTO] 		+ "'," +;
+															"'" + a_Dados[n_Item][DDESCCUSTO] 	+ "'," +;
+															c_AnoMes +;
+															",Val('" + a_Dados[n_Item][Len(a_Dados[n_Item])] + "')" + " } )"
+		&(c_ArrayXLS)
+
+Next n_Item
+	
+//--------------------------------------------------------------------------------------------------------------------------------------------------------//
+
+c_Arq := c_Nome
+oExcel:Activate()
+oExcel:GetXMLFile(c_Arq+c_ExtArq)
+                                        
+//- Move Arquivo para Pasta Relato do Usuário
+c_NovoArq := AllTrim(c_Path + c_Arq + c_ExtArq)           
+
+If __CopyFile( c_Arq+c_ExtArq, c_NovoArq )
+	MsgInfo( "Arquivo " + c_NovoArq + " gerado com sucesso no diretório " + c_Path, " A V I S O ! " )
+Else
+	MsgInfo( "Arquivo não copiado para temporário do usuário." , " A V I S O ! " )
+EndIf
+
+Return Nil
+
+//*************************************************************************************************************************//
+
+/*ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Programa  ³ ExpCSV    | Autor ³ Claudio Dias JR     (Focus Consultoria) | Data ³ 21/06/18 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descricao ³ Geração de relatório XLS                                                      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ a_Dados -> Array com dados para impressão                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³ Parametros -> Nil                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Específico³ FTI-Consulting                                                          		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Analista Resp.³  Data  ³ Manutencao Efetuada                                       		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³              ³  /  /  ³                                               					 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+
+Static Function ExpCSV(a_Dados)
+
+Local o_Excel
+Local n_Arq		:= 0
+Local c_Arq		:= ""
+Local c_Path	:= ""
+Local c_Cabec 	:= ""
+
+c_NovoArq 	:= "RLCTBR05_" + STRTRAN(DTOC(MSDATE()),"/","_")+"_"+Replace(Time(),":","_") + ".CSV"
+c_Arq  		:= CriaTrab( Nil, .F. )
+c_Path 		:= cGetFile("\", "Selecione o Local para salvar a Arquivo.",,,,GETF_RETDIRECTORY+GETF_LOCALHARD+GETF_LOCALFLOPPY)
+
+If !ExistDir( c_Path )
+	c_Path 	:= __RELDIR
+EndIf
+
+n_Arq  := FCreate( c_Path + c_NovoArq )
+
+If ( n_Arq == -1 )
+	MsgAlert( "Nao conseguiu criar o arquivo!" , " A T E N C A O !" )
+	Return Nil
+EndIf
+
+
+c_Cabec := "Código do Fornecedor;"
+c_Cabec += "Loja do Fornecedor;"
+c_Cabec += "Nome do Fornecedor;"
+c_Cabec += "C Contabil NF;"
+c_Cabec += "Nome C. Contabil;"
+c_Cabec += "Centro Custo;"
+c_Cabec += "Nome Centro Custo;"
+
+For n_AnoMes := 1 To Len(a_Meses)
+	c_Cabec += UPPER(U_NomeMes( Val(SubStr(a_Meses[n_AnoMes],5,2)) )) + "-" + Left(a_Meses[n_AnoMes],4)+";"
+Next n_Mes
+c_Cabec += "Total;"
+
+FWrite( n_Arq,  c_Cabec + Chr(13) + Chr(10) )
+
+ProcRegua(Len(a_Dados))
+
+For n_Item := 1 To Len(a_Dados)
+
+	IncProc()
+
+	c_AnoMes := ""
+	For n_Mes := 1 To Len(a_Meses)
+		c_AnoMes += Replace(a_Dados[n_Item][n_Mes+DCOLUNAS],".",",") + ";"
+	Next n_Mes
+									 		
+	c_ArrayCSV := 	AllTrim(a_Dados[n_Item][DFORNECE]) 	+ ";" +;
+					AllTrim(a_Dados[n_Item][DLOJA])		+ ";" +;
+					AllTrim(a_Dados[n_Item][DNOME])		+ ";" +;
+					AllTrim(a_Dados[n_Item][DCONTA]) 	+ ";" +;
+					AllTrim(a_Dados[n_Item][DDESCCONTA])+ ";" +;
+					AllTrim(a_Dados[n_Item][DCCUSTO])	+ ";" +;
+					AllTrim(a_Dados[n_Item][DDESCCUSTO])+ ";" +;
+					c_AnoMes +;
+					Replace(a_Dados[n_Item][Len(a_Dados[n_Item])],".",",")
+
+	FWrite( n_Arq, c_ArrayCSV + Chr(13) + Chr(10) )
+	
+Next n_Item
+
+MsgInfo( "Arquivo " + c_NovoArq + " gerado com sucesso no diretório " + c_Path, " A V I S O ! " )
+
+FClose(n_Arq)
+
+Return Nil
+
+//*************************************************************************************************************************/
+
+/*ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Programa  ³ NomeMes  | Autor ³ Claudio Dias Junior (Focus Consultoria)  | Data ³ 31/10/13 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descricao ³ Mensagem a ser apresentada caso as requisiçõe da OP a ser produzida não       ³±±
+±±           ³ possua saldo.                                                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ n_Mes 		=> Numero referente ai mês 1,2,3...12                            ³±±
+±±³          ³ c_NomeMes	=> Nome do Mês                                                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³ Nil                                                                           ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Específico³ FTI-Consulting                                                          		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Analista Resp.³  Data  ³ Manutencao Efetuada                                       		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³              ³  /  /  ³                                               					 ³±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+
+User Function NomeMes(n_Mes)
+
+Local c_NomeMes := ""
+
+If n_Mes >= 1 .Or. n_Mes <= 12
+
+	a_Mes := {	"Janeiro",;
+			    "Fevereiro",;
+			    "Marco",;
+			    "Abril",;
+			    "Maio",;
+			    "Junho",;
+			    "Julho",;
+		        "Agosto",;
+		        "Setembro",;
+		        "Outubro",;
+		        "Novembro",;
+		        "Dezembro"}
+		        
+	c_NomeMes := a_Mes[n_Mes]
+	
+Else
+
+	c_NomeMes := "Nao Existe"
+	
+EndIf
+              
+Return c_NomeMes
+
+//*************************************************************************************************************************//
+
+Static Function fGetMeses()
+
+Local a_Meses := {}
+Local c_Query := ""
+
+c_Query := " SELECT	  LEFT(D1_DTDIGIT,6) AS ANOMES " + c_Chr
+c_Query += "		, SUM(D1_TOTAL) AS TOTAL " + c_Chr + c_Chr
+
+c_Query += "FROM SD1050 SD1 " + c_Chr + c_Chr
+
+c_Query += "	LEFT JOIN SA2050 SA2 " + c_Chr
+c_Query += "	ON  A2_FILIAL		= '' " + c_Chr
+c_Query += "	AND A2_COD			= D1_FORNECE " + c_Chr
+c_Query += "	AND A2_LOJA			= D1_LOJA " + c_Chr
+c_Query += "	AND SA2.D_E_L_E_T_	= '' " + c_Chr + c_Chr
+
+c_Query += "	LEFT JOIN SA1050 SA1 " + c_Chr
+c_Query += "	ON  A1_FILIAL		= '' " + c_Chr
+c_Query += "	AND A1_COD			= D1_FORNECE " + c_Chr
+c_Query += "	AND A1_LOJA			= D1_LOJA " + c_Chr
+c_Query += "	AND SA1.D_E_L_E_T_	= '' " + c_Chr + c_Chr
+
+c_Query += "	INNER JOIN CT1050 CT1 " + c_Chr
+c_Query += "	ON  CT1_FILIAL		= '' " + c_Chr
+c_Query += "	AND CT1_CONTA		= D1_CONTA " + c_Chr
+c_Query += "	AND CT1.D_E_L_E_T_	= '' " + c_Chr + c_Chr
+
+c_Query += "	INNER JOIN CTT050 CTT " + c_Chr
+c_Query += "	ON  CTT_FILIAL		= '' " + c_Chr
+c_Query += "	AND CTT_CUSTO		= D1_CC " + c_Chr
+c_Query += "	AND CTT.D_E_L_E_T_	= '' " + c_Chr + c_Chr
+
+c_Query += " WHERE SD1.D_E_L_E_T_ = '' " + c_Chr
+c_Query += " AND   D1_DTDIGIT 	BETWEEN '" +DTOS(MV_PAR01)+ "' AND '" +DTOS(MV_PAR02)+ "'" + c_Chr
+c_Query += " AND   D1_FORNECE 	BETWEEN '" +MV_PAR03+ "' AND '" +MV_PAR05+ "'" + c_Chr
+c_Query += " AND   D1_LOJA 		BETWEEN '" +MV_PAR04+ "' AND '" +MV_PAR06+ "'" + c_Chr
+c_Query += " AND   D1_CONTA		BETWEEN '" +MV_PAR07+ "' AND '" +MV_PAR08+ "'" + c_Chr
+c_Query += " AND   D1_CC		BETWEEN '" +MV_PAR09+ "' AND '" +MV_PAR10+ "'" + c_Chr + c_Chr
+                                              
+c_Query += " GROUP BY LEFT(D1_DTDIGIT,6)" + c_Chr
+c_Query += " ORDER BY LEFT(D1_DTDIGIT,6)" + c_Chr
+
+If Select("RLCTBR06") > 0
+	RLCTBR06->(DbCloseArea())
+EndIf
+
+MemoWrite("RLCTBR06_Meses",c_Query)
+TCQUERY c_Query NEW ALIAS "RLCTBR06"
+
+If RLCTBR06->(!Eof())
+
+	While RLCTBR06->(!Eof())
+
+		aAdd( a_Meses, RLCTBR06->ANOMES )
+		RLCTBR06->(DbSkip())
+		
+	EndDo
+	
+Else
+	MsgStop("Não existe registros para extração, verifique os parâmetros","A V I S O ! ! !")
+EndIf
+
+RLCTBR06->(DbCloseArea())
+
+Return a_Meses
+
+
+//*************************************************************************************************************************//
+
+/*ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Programa  ³ ValidPerg | Autor ³ Claudio Dias JR     (Focus Consultoria) | Data ³ 21/06/18 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descricao ³ Responsável em criar o SX1.                                                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ c_Perg -> Grupo de perguntas a ser criado.                              		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³ Parametros -> Nil                                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Específico³ FTI-Consulting                                                          		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Analista Resp.³  Data  ³ Manutencao Efetuada                                       		 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³              ³  /  /  ³                                               					 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+
+Static Function ValidPerg(c_Perg)
+
+Local a_AreaATU := GetArea()
+Local a_Regs 	:= {}
+Local i,j
+
+DbSelectArea("SX1")
+DbSetOrder(1)
+
+c_Perg := c_Perg + Replicate(" ", 10 - Len(c_Perg))
+aAdd(a_Regs,{c_Perg,"01","Dt.NF Inclusao De             ","","","MV_CH1","D",08,0,0,"G","","MV_PAR01","","","","","","","","","","","","","","","","","","","","","","","","",""})
+aAdd(a_Regs,{c_Perg,"02","Dt.NF Inclusao Ate            ","","","MV_CH2","D",08,0,0,"G","","MV_PAR02","","","","","","","","","","","","","","","","","","","","","","","","",""})
+aAdd(a_Regs,{c_Perg,"03","Fornecedor De               	","","","MV_CH3","C",06,0,0,"G","","MV_PAR03","","","","","","","","","","","","","","","","","","","","","","","","","SA2"})
+aAdd(a_Regs,{c_Perg,"04","Loja De                       ","","","MV_CH4","C",02,0,0,"G","","MV_PAR04","","","","","","","","","","","","","","","","","","","","","","","","",""})
+aAdd(a_Regs,{c_Perg,"05","Fornecedor Ate              	","","","MV_CH5","C",06,0,0,"G","","MV_PAR05","","","","","","","","","","","","","","","","","","","","","","","","","SA2"})
+aAdd(a_Regs,{c_Perg,"06","Loja Ate                      ","","","MV_CH6","C",02,0,0,"G","","MV_PAR06","","","","","","","","","","","","","","","","","","","","","","","","",""})
+aAdd(a_Regs,{c_Perg,"07","Conta De                      ","","","MV_CH7","C",15,0,0,"G","","MV_PAR07","","","","","","","","","","","","","","","","","","","","","","","","","CT1"})
+aAdd(a_Regs,{c_Perg,"08","Conta Ate                     ","","","MV_CH8","C",15,0,0,"G","","MV_PAR08","","","","","","","","","","","","","","","","","","","","","","","","","CT1"})
+aAdd(a_Regs,{c_Perg,"09","C.Custo De                    ","","","MV_CH9","C",10,0,0,"G","","MV_PAR09","","","","","","","","","","","","","","","","","","","","","","","","","CTT"})
+aAdd(a_Regs,{c_Perg,"10","C.Custo Ate                   ","","","MV_CHA","C",10,0,0,"G","","MV_PAR10","","","","","","","","","","","","","","","","","","","","","","","","","CTT"})
+aAdd(a_Regs,{c_Perg,"11","Extensão relatório ?          ","","","MV_CHB","N",01,0,0,"C","","MV_PAR11","XLS","","","","","CSV","","","","","","","","","","","","","","","","","","",""})
+
+For i:=1 to Len(a_Regs)
+	If !DbSeek(c_Perg+a_Regs[i,2])
+		RecLock("SX1",.T.)
+		For j:=1 to FCount()
+			If j <= Len(a_Regs[i])
+				FieldPut(j,a_Regs[i,j])
+			Endif
+		Next
+		MsUnlock()
+	Endif
+Next
+
+RestArea(a_AreaATU)
+
+Return Nil
+
+//*************************************************************************************************************************//
