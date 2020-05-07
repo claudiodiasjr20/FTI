@@ -1,0 +1,43 @@
+{
+	"folders": [
+		{
+			"path": "D:\\CDias\\CDias_Git\\FTI"
+		},
+		{
+			"path": "D:\\CDias\\CDias_TDS\\Fontes\\Fontes V12 12.1.25"
+		}
+	],
+	"settings": {
+		
+		"advpl.environments":
+		[
+			{
+				"environment": "COMPILA",
+				"name": "COMPILA",
+				"server": "177.126.188.190",
+				"port": "1236",
+				"serverVersion": "170117A",
+				"passwordCipher": "Q0F5aHlVc25MSENVUDdBSEp1dFJGcEdWaGVVQ3ZFTWRmWjQ0dHRvNFpxN0w0YWpCMHdRdGVnT0RYbzJHcVJlZDFMNDQ0WnFUV2RCTXFlenhSNkFKNjJwWTc1cHRvbzZOcHB5M2p4VnpXaGtlUTgzMi9hckU0OFhSOCtUUmZuSDg=",
+				"includeList": "D:\\CDias\\CDias_TDS\\Include\\",
+				"user": "Admin",
+				"advpl.alpha_compile": true,
+				"smartClientPath": "D:\\CDias\\CDias_TDS\\WorkSpace\\SmartClient\\Smartclient_FTI"
+			},
+			{
+				"environment": "FTI_ATU_12125",
+				"name": "FTI_ATU_12125",
+				"server": "177.126.188.190",
+				"port": "1242",
+				"serverVersion": "170117A",
+				"passwordCipher": "Ty9BV1poeWFoVlFXaHVFSGJNQ01kU3FVdWgyN0dFcktkNXFNSXRJeE16bURKaG5tYnZJWUFsSkkyWnMwb0h1SXZBT0ZsUENkNW5keExqUzN2U3RzS3FmUCtDNlZNdnIvUmh4K29tWHhzZDE4enVoVlpVNkE0ZXp6KzdVcEs3b2c=",
+				"includeList": "D:\\CDias\\CDias_TDS\\Include\\",
+				"user": "Admin",
+				"advpl.alpha_compile": true,
+				"smartClientPath": "D:\\CDias\\CDias_TDS\\WorkSpace\\SmartClient\\Smartclient_FTI"
+			}
+		],
+		"advpl.selectedEnvironment": "COMPILA",
+		"advpl.workspaceFolders": "d:\\CDias\\CDias_Git\\FTI;d:\\CDias\\CDias_TDS\\Fontes\\Fontes V12 12.1.25;",
+		"advpl.debug_multiThread": false
+	}
+}
