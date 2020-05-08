@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "D:\\CDias\\CDias_TDS\\Fontes\\Fontes V12 12.1.25"
+		},
+		{
+			"path": "..\\..\\CDias_Trabalho\\GDC\\gdc_full\\GDC_Full\\Programas"
 		}
 	],
 	"settings": {
@@ -24,10 +27,10 @@
 				"smartClientPath": "D:\\CDias\\CDias_TDS\\WorkSpace\\SmartClient\\Smartclient_FTI"
 			},
 			{
-				"environment": "FTI_ATU_12125",
-				"name": "FTI_ATU_12125",
+				"environment": "FTI_DESENV",
+				"name": "FTI_DESENV",
 				"server": "177.126.188.190",
-				"port": "1242",
+				"port": "1235",
 				"serverVersion": "170117A",
 				"passwordCipher": "Ty9BV1poeWFoVlFXaHVFSGJNQ01kU3FVdWgyN0dFcktkNXFNSXRJeE16bURKaG5tYnZJWUFsSkkyWnMwb0h1SXZBT0ZsUENkNW5keExqUzN2U3RzS3FmUCtDNlZNdnIvUmh4K29tWHhzZDE4enVoVlpVNkE0ZXp6KzdVcEs3b2c=",
 				"includeList": "D:\\CDias\\CDias_TDS\\Include\\",
@@ -36,8 +39,8 @@
 				"smartClientPath": "D:\\CDias\\CDias_TDS\\WorkSpace\\SmartClient\\Smartclient_FTI"
 			}
 		],
-		"advpl.selectedEnvironment": "COMPILA",
-		"advpl.workspaceFolders": "d:\\CDias\\CDias_Git\\FTI;d:\\CDias\\CDias_TDS\\Fontes\\Fontes V12 12.1.25;",
+		"advpl.selectedEnvironment": "FTI_DESENV",
+		"advpl.workspaceFolders": "d:\\CDias\\CDias_Git\\FTI;d:\\CDias\\CDias_TDS\\Fontes\\Fontes V12 12.1.25;d:\\CDias\\CDias_Trabalho\\GDC\\gdc_full\\GDC_Full\\Programas;",
 		"advpl.debug_multiThread": false
 	}
 }
