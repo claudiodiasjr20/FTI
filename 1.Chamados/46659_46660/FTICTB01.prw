@@ -313,7 +313,7 @@ If l_Grava
 		Next n_Filho
 	Next n_Pai
 
-	fProcesCT2(c_ID)
+	U_FTICTB1C(c_ID)
 
 EndIf
 
@@ -321,7 +321,184 @@ Return Nil
 
 //*****************************************************************************************************************
 
-Static Function fProcesCT2(c_ID)
+User Function FTICTB1C(c_ID)
+
+Private c_Query 	:= "" 
+Private c_Chr		:= Chr(13) + Chr(10)
+Private a_CCRat 	:= {}
+Private a_CCAuxRat 	:= {}
+
+Default c_ID 		:= ""
+
+c_Query := " SELECT	  Z2_DATAREF " + c_Chr
+c_Query += "		, Z2_CCPAI " + c_Chr
+c_Query += "		, Z2_CCFILHO " + c_Chr
+c_Query += "		, Z2_RATPER " + c_Chr
+
+c_Query += " FROM SZ2050 " + c_Chr
+c_Query += " WHERE D_E_L_E_T_ = '' " + c_Chr
+c_Query += " AND Z2_ID =  '" + c_ID + "' " + c_Chr
+c_Query += " GROUP BY Z2_DATAREF, Z2_CCPAI, Z2_CCFILHO, Z2_RATPER " + c_Chr
+
+If Select("FTICTB01C") > 0
+	FTICTB01C->(DbCloseArea())
+EndIf
+
+MemoWrite("FTICTB01C_Processo_CT2.SQL",c_Query)
+TCQUERY c_Query NEW ALIAS "FTICTB01C"
+
+If FTICTB01C->(!Eof()) 
+
+	While FTICTB01C->(!Eof())
+		
+		c_Data		:= FTICTB01C->Z2_DATAREF
+		c_CCPai 	:= FTICTB01C->Z2_CCPAI
+		a_CCAuxRat 	:= {}
+		While FTICTB01C->(!Eof()) .And. c_CCPai == FTICTB01C->Z2_CCPAI
+
+			aAdd(a_CCAuxRat, { 	Z2_CCFILHO,;
+								Z2_RATPER } )
+		
+			FTICTB01C->(DbSkip())
+		
+		EndDo
+
+		aAdd( a_CCRat, { c_Data, c_CCPai, a_CCAuxRat } )
+
+	EndDo
+
+EndIf
+
+fProcessCT2()
+
+Return Nil
+
+//*****************************************************************************************************************
+
+Static Function fProcessCT2()
+
+Local c_Data  		:= ""
+Local c_CCPai 		:= ""
+Local a_CCProces	:= {}
+Local l_LCDebCrd	:= .T.
+
+Private cPadrao		:= "RT0"
+Private cArquivo 	:= ""
+Private nHdlPrv 	:= 0
+Private cLote		:= ""
+
+For n_Rat := 1 To Len(a_CCRat)
+
+	cLote		:= "R"+AllTrim(a_CCRat[n_Rat][2])
+	cArquivo	:= ""
+	nHdlPrv 	:= 0
+
+	c_Data 		:= a_CCRat[n_Rat][1]
+	c_CCPai 	:= a_CCRat[n_Rat][2]
+	a_CCProces 	:= a_CCRat[n_Rat][3]
+
+	c_Query := " SELECT   CT2TIPO " + c_Chr
+	c_Query += "		, CT2CONTA " + c_Chr
+	c_Query += "		, CT2CCUSTO " + c_Chr
+	c_Query += "		, CT2VALOR " + c_Chr
+
+	c_Query += " FROM " + c_Chr
+	c_Query += " ( " + c_Chr
+	c_Query += "	SELECT 'DEBITO' AS CT2TIPO, CT2_DEBITO AS CT2CONTA, CT2_CCD AS CT2CCUSTO, SUM(CT2_VALOR) AS CT2VALOR " + c_Chr
+	c_Query += "	FROM CT2050 CT2 " + c_Chr
+	c_Query += "	WHERE CT2.D_E_L_E_T_='' " + c_Chr
+	c_Query += "	AND CT2_FILIAL>=''  " + c_Chr
+	//c_Query += "	AND CT2_DATA LIKE '"+Left(c_Data,6)+"%' " + c_Chr 
+	c_Query += "	AND CT2_DATA = '20200514' " + c_Chr  // TEMPORARIO
+	c_Query += "	AND CT2_CCD LIKE '"+c_CCPai+"' " + c_Chr
+	c_Query += "	GROUP BY CT2_DEBITO, CT2_CCD " + c_Chr
+
+	c_Query += "	UNION ALL " + c_Chr
+
+	c_Query += "	SELECT 'CREDITO' AS CT2TIPO, CT2_CREDIT AS CT2CONTA, CT2_CCC AS CT2CCUSTO, SUM(CT2_VALOR) AS CT2VALOR " + c_Chr
+	c_Query += "	FROM CT2050 CT2 " + c_Chr
+	c_Query += "	WHERE CT2.D_E_L_E_T_='' " + c_Chr
+	c_Query += "	AND CT2_FILIAL>='' " + c_Chr
+	//c_Query += "	AND CT2_DATA LIKE '"+Left(c_Data,6)+"%' " + c_Chr 
+	c_Query += "	AND CT2_DATA = '20200514' " + c_Chr  // TEMPORARIO
+	c_Query += "	AND CT2_CCC LIKE '"+c_CCPai+"' " + c_Chr
+	c_Query += "	GROUP BY  CT2_CREDIT, CT2_CCC " + c_Chr
+	c_Query += " ) AS RESULT " + c_Chr
+
+	If Select("FTICTB01D") > 0
+		FTICTB01D->(DbCloseArea())
+	EndIf
+
+	MemoWrite("FTICTB01D_Processo_CT2.SQL",c_Query)
+	TCQUERY c_Query NEW ALIAS "FTICTB01D"
+
+	If FTICTB01D->(!Eof()) 
+
+		BEGIN TRANSACTION
+
+		nHdlPrv := HeadProva( cLote, "FTICTB01", cUserName, @cArquivo )
+		While FTICTB01D->(!Eof())
+
+			l_LCDebCrd  := IIF( FTICTB01D->CT2TIPO == "CREDITO", .T., .F. ) // .T. CREDITO | .F. DEBITO
+			c_Conta		:= FTICTB01D->CT2CONTA
+			c_CCusto	:= FTICTB01D->CT2CCUSTO
+			n_Valor		:= FTICTB01D->CT2VALOR
+
+			fGeraCT2(a_CCProces, l_LCDebCrd, c_Data, c_Conta, c_CCusto, n_Valor)
+
+			FTICTB01D->(DbSkip())
+		
+		EndDo
+
+//----- Envia para Lancamento Contabil
+		cA100Incl(cArquivo,nHdlPrv,3,cLote,.T.,.F.)
+	
+		END TRANSACTION
+
+	EndIf
+
+Next n_Rat
+
+Return Nil
+
+//*****************************************************************************************************************
+
+Static Function fGeraCT2(a_CCFilRat, l_LCDebCrd, c_Data, c_Conta, c_CCusto, n_Valor)
+
+Local n_ValorLC  := 0
+Local n_TotalAux := n_Valor
+
+For n_RatCT2 := 1 To Len(a_CCFilRat)
+
+	c_CCFilho	 := a_CCFilRat[n_RatCT2][1]
+	l_CCFilhoPai := .F.
+	If GetAdvFval("CTT", "CTT_XPAI", xFilial("CTT")+c_CCFilho, 1, "" ) == "S"//CTT_FILIAL, CTT_CUSTO, R_E_C_N_O_, D_E_L_E_T_
+		l_CCFilhoPai := .T.
+	EndIf
+
+	If Len(a_CCFilRat) == n_RatCT2
+		n_ValorLC := n_TotalAux
+	Else
+		n_ValorLC  := Round(n_Valor * a_CCFilRat[n_RatCT2][2] / 100,2)
+		n_TotalAux := n_TotalAux - n_ValorLC
+	EndIf
+
+	CREDITO 	:= c_Conta
+	DEBITO		:= c_Conta
+	CUSTOC		:= IIF( l_LCDebCrd, c_CCFilho, c_CCusto )
+	CUSTOD		:= IIF(!l_LCDebCrd, c_CCFilho, c_CCusto )
+	HISTORICO	:= "Rateio:" + Left(c_Data,4) + "-" + SubString(c_Data,5,2)+ " CC:" + AllTrim(c_CCusto)
+	VALOR		:= n_ValorLC
+	dDataBase	:= STOD(c_Data)
+
+	nTotal	:= DetProva(nHdlPrv,cPadrao,"DGCTB01",cLote)
+
+	If l_CCFilhoPai
+		n_PosFil := aScan( a_CCRat,{|x| x[2] == c_CCFilho })
+		fGeraCT2(a_CCRat[n_PosFil][3], l_LCDebCrd, c_Data, c_Conta, c_CCFilho, n_ValorLC)
+	EndIf
+
+Next n_RatCT2
 
 Return Nil
 
