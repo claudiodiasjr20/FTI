@@ -79,8 +79,9 @@ DEFINE MSDIALOG oDlg TITLE c_Titulo FROM 000,000 TO 500,710 PIXEL
 						a_CCGeral[n_Scan][COLARRAY][oLbx:nAt][COLPERRAT]}}
 	oLbx:Refresh()
 
-@220,210 BUTTON "Sair" 			SIZE 65,11 PIXEL ACTION ( oDlg:End() ) OF oDlg
-@220,285 BUTTON "Fazer Rateio" 	SIZE 65,11 PIXEL ACTION ( MsgRun("Gravando Rateio..."	,"",{|| CursorWait(), GravaRAT(), CursorArrow()})) OF oDlg
+@220,135 BUTTON "LOG/RE-Processo" 	SIZE 65,11 PIXEL ACTION ( fLogSZ2() ) OF oDlg
+@220,210 BUTTON "Sair" 				SIZE 65,11 PIXEL ACTION ( oDlg:End() ) OF oDlg
+@220,285 BUTTON "Fazer Rateio" 		SIZE 65,11 PIXEL ACTION ( MsgRun("Gravando Rateio..."	,"",{|| CursorWait(), GravaRAT(), CursorArrow()})) OF oDlg
 
 ACTIVATE MSDIALOG oDlg CENTER
 
@@ -321,7 +322,7 @@ Return Nil
 
 //*****************************************************************************************************************
 
-User Function FTICTB1C(c_ID)
+User Function FTICTB1C(c_ID, l_Reprocesso)
 
 Private c_Query 	:= "" 
 Private c_Chr		:= Chr(13) + Chr(10)
@@ -329,6 +330,7 @@ Private a_CCRat 	:= {}
 Private a_CCAuxRat 	:= {}
 
 Default c_ID 		:= ""
+Default l_Reprocesso:= .F.
 
 c_Query := " SELECT	  Z2_DATAREF " + c_Chr
 c_Query += "		, Z2_CCPAI " + c_Chr
@@ -369,7 +371,20 @@ If FTICTB01C->(!Eof())
 
 EndIf
 
-fProcessCT2()
+If fVldCT2(c_Data)
+	
+	fProcessCT2()
+	
+	If l_Reprocesso
+		c_Query += " UPDATE SZ2050 SET 	  Z2_REPUSER = '"+cUserName+"'"
+		c_Query += " 					, Z2_REPDATA = '"+DTOS(MsDate())+"'"
+		c_Query += "					, Z2_REPHORA = '"+Left(Time(),5)+"' "
+		c_Query += " WHERE D_E_L_E_T_ = '' "
+		c_Query += " AND Z2_ID = '" + c_ID + "' "
+		TcSqlExec(c_Query)
+	EndIf
+
+EndIf
 
 Return Nil
 
@@ -410,6 +425,7 @@ For n_Rat := 1 To Len(a_CCRat)
 	c_Query += "	AND CT2_FILIAL>=''  " + c_Chr
 	//c_Query += "	AND CT2_DATA LIKE '"+Left(c_Data,6)+"%' " + c_Chr 
 	c_Query += "	AND CT2_DATA = '20200514' " + c_Chr  // TEMPORARIO
+	c_Query += "	AND CT2_MOEDLC = '01'" + c_Chr  
 	c_Query += "	AND CT2_CCD LIKE '"+c_CCPai+"' " + c_Chr
 	c_Query += "	GROUP BY CT2_DEBITO, CT2_CCD " + c_Chr
 
@@ -421,6 +437,7 @@ For n_Rat := 1 To Len(a_CCRat)
 	c_Query += "	AND CT2_FILIAL>='' " + c_Chr
 	//c_Query += "	AND CT2_DATA LIKE '"+Left(c_Data,6)+"%' " + c_Chr 
 	c_Query += "	AND CT2_DATA = '20200514' " + c_Chr  // TEMPORARIO
+	c_Query += "	AND CT2_MOEDLC = '01' " + c_Chr 
 	c_Query += "	AND CT2_CCC LIKE '"+c_CCPai+"' " + c_Chr
 	c_Query += "	GROUP BY  CT2_CREDIT, CT2_CCC " + c_Chr
 	c_Query += " ) AS RESULT " + c_Chr
@@ -499,6 +516,188 @@ For n_RatCT2 := 1 To Len(a_CCFilRat)
 	EndIf
 
 Next n_RatCT2
+
+Return Nil
+
+//*****************************************************************************************************************
+
+Static Function fVldCT2(c_Data)
+
+Local l_Ret := .F.
+
+c_Query := " SELECT	 COUNT(*) AS QTD_REG " + c_Chr
+
+c_Query += " FROM CT2050 " + c_Chr
+c_Query += " WHERE D_E_L_E_T_ = '' " + c_Chr
+c_Query += " AND CT2_DATA LIKE '"+Left(c_Data,6)+"%'  " + c_Chr
+c_Query += " AND CT2_ROTINA = 'DGCTB01' " + c_Chr
+
+If Select("FTICTB01E") > 0
+	FTICTB01E->(DbCloseArea())
+EndIf
+
+MemoWrite("FTICTB01E_fVldCT2.SQL",c_Query)
+TCQUERY c_Query NEW ALIAS "FTICTB01E"
+
+If FTICTB01E->(!Eof()) 
+
+		If FTICTB01E->QTD_REG > 0 
+
+			If MsgYesNo("Existem "+AllTrim(Str(FTICTB01E->QTD_REG))+" lançamentos de rateio no mês de " + DTOC(STOD(c_Data)) + c_Chr +;
+						"Caso de sequência, ele serão excluídos e recriados." + c_Chr + c_Chr +;
+						"Deseja prosseguir?" ,"A V I S O")
+
+				c_Query += " UPDATE CT2050 SET D_E_L_E_T_ = '*', R_E_C_D_E_L_ = R_E_C_N_O_ "
+				c_Query += " WHERE D_E_L_E_T_ = '' "
+				c_Query += " AND CT2_DATA LIKE '"+Left(c_Data,6)+"%' "
+				c_Query += " AND CT2_ROTINA = 'DGCTB01' "
+
+				TcSqlExec(c_Query)
+				l_Ret := .T.
+
+			EndIf
+
+		EndIf
+
+EndIf
+
+Return l_Ret
+
+//*****************************************************************************************************************
+
+Static Function fLogSZ2()
+
+Local c_Query 	:= ""
+Local c_Chr 	:= Chr(13)+Chr(10)
+
+Private a_RegSZ2	:= {}
+Private a_RegSZ2Rat := {}
+Private o_Dlg
+Private o_Lbx
+
+c_Query := " SELECT   Z2_ID " + c_Chr
+c_Query += "		, Z2_DATAREF " + c_Chr
+c_Query += "		, Z2_LOGUSER " + c_Chr
+c_Query += "		, Z2_LOGDATA " + c_Chr
+c_Query += "		, Z2_LOGHORA " + c_Chr
+c_Query += "		, Z2_REPUSER " + c_Chr
+c_Query += "		, Z2_REPDATA " + c_Chr
+c_Query += "		, Z2_REPHORA " + c_Chr
+c_Query += "		, ISNULL(CONVERT(VARCHAR(2047), CONVERT(VARBINARY(2047), Z2_OBS)),'') AS Z2_OBS " + c_Chr
+c_Query += "		, Z2_CCPAI " + c_Chr
+c_Query += "		, Z2_CCFILHO " + c_Chr
+c_Query += "		, Z2_RATPER " + c_Chr + c_Chr
+
+c_Query += "FROM SZ2050 " + c_Chr
+c_Query += "WHERE D_E_L_E_T_ = '' " + c_Chr
+c_Query += "ORDER BY Z2_LOGDATA+Z2_LOGHORA DESC,  Z2_REPDATA+Z2_REPHORA DESC" + c_Chr
+
+MemoWrite("fLogSZ2.SQL", c_Query)
+
+If Select("TRBSZ2") > 0
+	TRBSZ2->(DbCloseArea())
+Endif
+
+TCQUERY c_Query NEW ALIAS "TRBSZ2"
+
+While TRBSZ2->(!Eof())
+
+	c_ID 		:= TRBSZ2->Z2_ID
+	c_DtRef 	:= DTOC(STOD(TRBSZ2->Z2_DATAREF))
+	c_LOGUsr	:= TRBSZ2->Z2_LOGUSER
+	c_LOGDt		:= DTOC(STOD(TRBSZ2->Z2_LOGDATA))
+	c_LOGHr		:= TRBSZ2->Z2_LOGHORA
+	c_REPUsr	:= TRBSZ2->Z2_REPUSER
+	c_REPDt 	:= DTOC(STOD(TRBSZ2->Z2_REPDATA))
+	c_REPHr		:= TRBSZ2->Z2_REPHORA
+	c_ObsSZ2	:= TRBSZ2->Z2_OBS 
+	a_RegSZ2Rat := {}
+
+	While c_ID == TRBSZ2->Z2_ID
+
+		aAdd(a_RegSZ2Rat, { AllTrim(Z2_CCPAI),;
+							AllTrim(GetAdvFVal("CTT", "CTT_DESC01",xFilial("SZ2")+TRBSZ2->Z2_CCPAI,1,"")),;
+							AllTrim(Z2_CCFILHO),;
+							AllTrim(GetAdvFVal("CTT", "CTT_DESC01",xFilial("SZ2")+TRBSZ2->Z2_CCFILHO,1,"")),;
+							Z2_RATPER })
+
+		TRBSZ2->(DbSkip())
+
+	EndDo
+
+	aAdd(a_RegSZ2, { c_ID, c_DtRef,	c_LOGUsr, c_LOGDt, c_LOGHr,	c_REPUsr, c_REPDt, c_REPHr,	c_ObsSZ2, a_RegSZ2Rat })
+
+EndDo
+                                                                           
+    
+If Len(a_RegSZ2) > 0 
+
+	DEFINE MSDIALOG o_Dlg TITLE "Log - Rateio CTB Centro de CUSTO" FROM 0,0 TO 240,1150 PIXEL
+	                                                         
+	@ 10,10 LISTBOX o_Lbx FIELDS HEADER ;
+	   "ID", "Mês Rateio", "User Processo", "Data Processo", "Hora Processo", "User RE-Processo", "Data RE-Processo", "Hora RE-Processo", "Observação";
+	   SIZE 560,095 OF o_Dlg PIXEL 
+	
+	o_Lbx:SetArray( a_RegSZ2 )
+	o_Lbx:bLine := {|| { a_RegSZ2[o_Lbx:nAt][01],;
+						 a_RegSZ2[o_Lbx:nAt][02],;
+						 a_RegSZ2[o_Lbx:nAt][03],;
+						 a_RegSZ2[o_Lbx:nAt][04],;
+						 a_RegSZ2[o_Lbx:nAt][05],;
+						 a_RegSZ2[o_Lbx:nAt][06],;
+						 a_RegSZ2[o_Lbx:nAt][07],;
+						 a_RegSZ2[o_Lbx:nAt][08],;
+						 a_RegSZ2[o_Lbx:nAt][09] }}
+	
+	@ 106,010 BUTTON oBut1 PROMPT "&Fechar" 		SIZE 44,12 OF o_Dlg PIXEl Action (Close(o_Dlg))
+	@ 106,060 BUTTON oBut2 PROMPT "&Veja %Rateio" 	SIZE 44,12 OF o_Dlg PIXEl Action (fLogRat(a_RegSZ2[o_Lbx:nAt][10]))
+	@ 106,110 BUTTON oBut2 PROMPT "&Reprocessar" 	SIZE 44,12 OF o_Dlg PIXEl Action (fReprocesso(a_RegSZ2[o_Lbx:nAt]))
+	ACTIVATE MSDIALOG o_Dlg CENTER
+
+Else
+
+	Alert("Existe Registro de LOG's...")
+
+EndIf
+
+Return Nil
+
+//*****************************************************************************************************************
+
+Static Function fLogRat(a_ListRat)
+
+Local o_Dlg2
+Local o_Lbx2
+
+	DEFINE MSDIALOG o_Dlg2 TITLE "%Rateio CC Pai X CC Filho" FROM 0,0 TO 240,530 PIXEL
+	                                                         
+	@ 10,10 LISTBOX o_Lbx2 FIELDS HEADER ;
+	   "CC Pai", "Descrição", "CC Filho", "Descrição", "%Rateado";
+	   SIZE 240,095 OF o_Dlg2 PIXEL 
+	
+	o_Lbx2:SetArray( a_ListRat )
+	o_Lbx2:bLine := {|| {a_ListRat[o_Lbx2:nAt][01],;
+						 a_ListRat[o_Lbx2:nAt][02],;
+						 a_ListRat[o_Lbx2:nAt][03],;
+						 a_ListRat[o_Lbx2:nAt][04],;
+						 a_ListRat[o_Lbx2:nAt][05]}}
+	
+	@ 106,010 BUTTON oBut1 PROMPT "&Fechar" 		SIZE 44,12 OF o_Dlg2 PIXEl Action (Close(o_Dlg2))
+	ACTIVATE MSDIALOG o_Dlg2 CENTER
+
+Return Nil
+
+//*****************************************************************************************************************
+
+Static Function fReprocesso(a_RegSZ2Rep)
+
+	If MsgYesNo("Tem certeza que deseja reprocessar o ID " + a_RegSZ2Rep[1] + c_Chr +;
+				"Referente ao mês " + a_RegSZ2Rep[2] + " ?" + c_Chr + c_Chr +;
+				"Deseja prosseguir?" ,"A V I S O")
+		
+		MsgRun("Realizando RE-Processamento..."	,"",{|| CursorWait(), U_FTICTB1C( a_RegSZ2Rep[1], .T. ), CursorArrow()})
+
+	EndIf
 
 Return Nil
 
