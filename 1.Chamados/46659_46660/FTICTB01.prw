@@ -48,10 +48,10 @@ Private c_Query 	:= ""
 Private c_Chr	 	:= Chr(13) + Chr(10)
 Private n_Scan		:= 0
 
-fGetCC(d_DataRef, @c_CCRat, @a_CCPAI, @a_CCGeral)
+fGetCC(.T., d_DataRef, @c_CCRat, @a_CCPAI, @a_CCGeral)
 n_Scan := aScan( a_CCGeral,{|x| x[COLCCPAI] == c_CCRat })
 
-c_Titulo := "FTI - Parametrização Rateio CTB Centro de CUSTO | Vr. 12/05/2020 |"
+c_Titulo := "FTI - Parametrização Rateio CTB Centro de CUSTO | Vr. 15/05/2020 |"
 
 //---------------------------------//
 // TELA DE VISUALIZAÇÃO DOS CUSTOS //
@@ -89,11 +89,12 @@ Return Nil
 
 //*****************************************************************************************************************
 
-Static Function fGetCC(d_DataRef, c_CCRat, a_CCPAI, a_CCGeral)
+Static Function fGetCC(l_GetTela, d_DataRef, c_CCRat, a_CCPAI, a_CCGeral)
 
 c_Query := " SELECT CTT_CUSTO, CTT_DESC01 " + c_Chr
 c_Query += " FROM CTT050 CTT " + c_Chr
-c_Query += " WHERE CTT_XPAI = 'S' " + c_Chr
+c_Query += " WHERE D_E_L_E_T_ = '' "
+c_Query += " AND CTT_XPAI = 'S' " + c_Chr
 c_Query += " ORDER BY CTT_CUSTO " + c_Chr
 
 If Select("FTICTB01") > 0
@@ -105,15 +106,23 @@ TCQUERY c_Query NEW ALIAS "FTICTB01"
 
 If FTICTB01->(!Eof()) 
 
-	c_CCRat	  := AllTrim(FTICTB01->CTT_CUSTO)+"-"+AllTrim(FTICTB01->CTT_DESC01)
 	a_CCPAI	  := {}
 	a_CCGeral := {}
 
 	While FTICTB01->(!Eof())
 
         c_CCusto :=	AllTrim(FTICTB01->CTT_CUSTO)+"-"+AllTrim(FTICTB01->CTT_DESC01)
-		aAdd( a_CCPAI, c_CCusto )
-		fGetGeral(d_DataRef, c_CCusto, @a_CCGeral)
+		l_Filho  := fGetGeral(d_DataRef, c_CCusto, @a_CCGeral)
+		If l_Filho
+			c_CCRat := IIF(Empty(c_CCRat), AllTrim(FTICTB01->CTT_CUSTO)+"-"+AllTrim(FTICTB01->CTT_DESC01), c_CCRat)
+			aAdd( a_CCPAI, c_CCusto )
+		Else
+			If l_GetTela
+				MsgInfo(c_CCusto + c_Chr + c_Chr +;
+						"Não foi possível encontar vinculo para rateio," + c_Chr +;
+						"o mesmo não será adicionado no processo. ")
+			EndIf
+		EndIf
 
 		FTICTB01->(DbSkip())
 		
@@ -130,6 +139,7 @@ Static Function fGetGeral(d_DataRef, c_CCusto, a_CCGeral)
 Local c_CCParam := SubString(c_CCusto,1,At('-',c_CCusto)-1)
 Local a_CCFilhos:= {}
 Local l_RatOK	:= .F.
+Local l_Filho	:= .T.
 Local n_SomaRat	:= 0
 
 c_Query := " SELECT	  CTT_CUSTO " + c_Chr
@@ -181,10 +191,11 @@ If FTICTB01B->(!Eof())
 	EndIf
 	
 	aAdd( a_CCGeral, { c_CCusto, a_CCFilhos, l_RatOK } )
-
+Else
+	l_Filho	:= .F.
 EndIf
 
-Return Nil
+Return l_Filho
 
 //*****************************************************************************************************************
 
@@ -219,7 +230,7 @@ ElseIf d_DataRef <> LastDate(d_DataRef)
 	d_DataRef := LastDate(d_DataRef)
 EndIf
 
-fGetCC(d_DataRef, @c_CCRat, @a_CCPAI, @a_CCGeral)
+fGetCC(.F., d_DataRef, @c_CCRat, @a_CCPAI, @a_CCGeral)
 n_Scan := aScan( a_CCGeral,{|x| x[COLCCPAI] == c_CCRat })
 AtuGrid( c_CCRat, a_CCGeral)
 
@@ -669,7 +680,7 @@ Static Function fLogRat(a_ListRat)
 Local o_Dlg2
 Local o_Lbx2
 
-	DEFINE MSDIALOG o_Dlg2 TITLE "%Rateio CC Pai X CC Filho" FROM 0,0 TO 240,530 PIXEL
+	DEFINE MSDIALOG o_Dlg2 TITLE "%Rateio CC Pai X CC Filho" FROM 0,0 TO 240,520 PIXEL
 	                                                         
 	@ 10,10 LISTBOX o_Lbx2 FIELDS HEADER ;
 	   "CC Pai", "Descrição", "CC Filho", "Descrição", "%Rateado";
@@ -691,13 +702,41 @@ Return Nil
 
 Static Function fReprocesso(a_RegSZ2Rep)
 
-	If MsgYesNo("Tem certeza que deseja reprocessar o ID " + a_RegSZ2Rep[1] + c_Chr +;
-				"Referente ao mês " + a_RegSZ2Rep[2] + " ?" + c_Chr + c_Chr +;
-				"Deseja prosseguir?" ,"A V I S O")
-		
-		MsgRun("Realizando RE-Processamento..."	,"",{|| CursorWait(), U_FTICTB1C( a_RegSZ2Rep[1], .T. ), CursorArrow()})
+c_Query := " SELECT MAX(Z2_ID) Z2_ID " + c_Chr
+c_Query += " FROM SZ2050 WHERE D_E_L_E_T_ = '' " + c_Chr
+c_Query += " AND Z2_DATAREF LIKE '"+Left(DTOS(CTOD(a_RegSZ2Rep[2])),6)+"%' " + c_Chr
+
+MemoWrite("fReprocesso.SQL", c_Query)
+
+If Select("VLDREPSZ2") > 0
+	VLDREPSZ2->(DbCloseArea())
+Endif
+
+TCQUERY c_Query NEW ALIAS "VLDREPSZ2"
+
+If VLDREPSZ2->(!Eof())
+
+	If VLDREPSZ2->Z2_ID == a_RegSZ2Rep[1]
+
+		If MsgYesNo("Tem certeza que deseja reprocessar o ID " + a_RegSZ2Rep[1] + c_Chr +;
+					"Referente ao mês " + a_RegSZ2Rep[2] + " ?" + c_Chr + c_Chr +;
+					"Deseja prosseguir?" ,"A V I S O")
+			
+			MsgRun("Realizando RE-Processamento..."	,"",{|| CursorWait(), U_FTICTB1C( a_RegSZ2Rep[1], .T. ), CursorArrow()})
+
+		EndIf
+
+	Else
+
+		MsgInfo("Só é possível fazer o reprocessamento do último "+ c_Chr +;
+				"processo realizado do mês."+ c_Chr + c_Chr +;
+				"Data Referência.:" + a_RegSZ2Rep[2]+ c_Chr +;
+				"ID Ult.Processo.:" + VLDREPSZ2->Z2_ID + c_Chr +;
+				"ID Solicitado...:" + a_RegSZ2Rep[1] ,"A T E N Ç Ã O")
 
 	EndIf
+
+EndIf
 
 Return Nil
 
